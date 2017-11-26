@@ -1,5 +1,8 @@
-﻿using Catalogue.Core.Model;
+﻿using Catalogue.Core.Interface;
+using Catalogue.Core.Model;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.ServiceFabric.Services.Client;
+using Microsoft.ServiceFabric.Services.Remoting.Client;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,19 +13,18 @@ namespace Api.Controllers
     [Route("api/[controller]")]
     public class ProductsController : Controller
     {
-        // GET api/values
-        [HttpGet]
-        public IEnumerable<Product> Get()
-        {
-            var product = new Product
-            {
-                Id = Guid.NewGuid(),
-                Name = "Product 1",
-                Description = "Product 1 Description",
-                Price = 10
-            };
+        private IProductService _productService;
 
-            return new List<Product> { product };
+        public ProductsController()
+        {
+            _productService = ServiceProxy.Create<IProductService>(new Uri("fabric:/eCommerce/Catalogue"),
+                new ServicePartitionKey(0));
+        }
+
+        [HttpGet]
+        public async Task<IEnumerable<Product>> Get()
+        {
+            return await _productService.GetAllProducts();
         }
     }
 }

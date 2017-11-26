@@ -9,19 +9,30 @@ using Microsoft.ServiceFabric.Services.Communication.Runtime;
 using Microsoft.ServiceFabric.Services.Runtime;
 using Catalogue.Core.Interface;
 using Catalogue.Core.Model;
+using Microsoft.ServiceFabric.Services.Remoting.Runtime;
 
 namespace Catalogue
 {
     /// <summary>
     /// An instance of this class is created for each service replica by the Service Fabric runtime.
     /// </summary>
-    internal sealed class Catalogue : StatefulService
+    internal sealed class Catalogue : StatefulService, IProductService
     {
         private IProductRepository _productRepository;
 
         public Catalogue(StatefulServiceContext context)
             : base(context)
         { }
+
+        public async Task AddProduct(Product product)
+        {
+            await _productRepository.AddOrUpdateAsync(product);
+        }
+
+        public async Task<IEnumerable<Product>> GetAllProducts()
+        {
+            return await _productRepository.GetAll();
+        }
 
         /// <summary>
         /// Optional override to create listeners (e.g., HTTP, Service Remoting, WCF, etc.) for this service replica to handle client or user requests.
@@ -32,7 +43,10 @@ namespace Catalogue
         /// <returns>A collection of listeners.</returns>
         protected override IEnumerable<ServiceReplicaListener> CreateServiceReplicaListeners()
         {
-            return new ServiceReplicaListener[0];
+            return new[]
+            {
+                new ServiceReplicaListener(context=> this.CreateServiceRemotingListener(context))
+            };
         }
 
         /// <summary>
